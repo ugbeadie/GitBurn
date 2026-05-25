@@ -9,9 +9,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa";
+import { FaXTwitter } from "react-icons/fa6";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import axios from "axios";
+import { toPng } from "html-to-image";
 
 const API_BASE_URL = "http://localhost:8000";
 
@@ -79,6 +81,8 @@ export default function App() {
   const [roastData, setRoastData] = useState(null);
   const [isRoastComplete, setIsRoastComplete] = useState(false);
   const [error, setError] = useState("");
+  const roastCardRef = useRef(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const terminalEndRef = useRef(null);
 
@@ -158,6 +162,41 @@ export default function App() {
     setRoastData(null);
     setError("");
     setIsRoastComplete(false);
+  };
+
+  const handleShareImage = async () => {
+    if (!roastCardRef.current) return;
+    setIsSharing(true);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    try {
+      const dataUrl = await toPng(roastCardRef.current, {
+        backgroundColor: "#000000",
+        pixelRatio: 2,
+        skipAutoScale: true,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `${roastData.username}-gitburn-roast.png`;
+      link.click();
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleTwitterShare = () => {
+    const text = encodeURIComponent(
+      `I just got annihilated by GitBurn 🔥\n\nMy GitHub is in shambles. Get your damage report here: \n\n#GitBurn #GitHubRoast`,
+    );
+    // Remember to replace the URL
+    const url = encodeURIComponent(`https://your-gitburn-url.com`);
+
+    window.open(
+      `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+      "_blank",
+    );
   };
 
   return (
@@ -396,10 +435,24 @@ export default function App() {
                     transition={{ type: "spring", damping: 25, stiffness: 120 }}
                     className="w-full flex flex-col gap-3 border-t border-neutral-800/60 pt-4 overflow-hidden relative z-10"
                   >
-                    <button className="w-full bg-primary hover:bg-primary/90 text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-[0_0_20px_-5px_rgba(255,42,95,0.4)] cursor-pointer text-sm">
-                      <Share2 size={18} />
-                      Share Damage Report
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleShareImage}
+                        disabled={isSharing}
+                        className="flex-1 bg-primary hover:bg-primary/90 text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98] shadow-[0_0_20px_-5px_rgba(255,42,95,0.4)] cursor-pointer text-sm disabled:opacity-50"
+                      >
+                        <Share2 size={18} />
+                        {isSharing ? "Generating..." : "Download"}
+                      </button>
+
+                      <button
+                        onClick={handleTwitterShare}
+                        className="flex-1 bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white py-3.5 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-[0.98] cursor-pointer text-sm"
+                      >
+                        <FaXTwitter size={18} fill="currentColor" />
+                        Share
+                      </button>
+                    </div>
 
                     <button
                       onClick={handleReset}
@@ -414,7 +467,7 @@ export default function App() {
             </motion.div>
 
             {/* Roast Display Card */}
-            <div className="md:col-span-8 w-full">
+            <div className="md:col-span-8 w-full" ref={roastCardRef}>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
