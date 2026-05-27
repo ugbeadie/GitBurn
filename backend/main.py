@@ -115,6 +115,8 @@ async def fetch_github_data(username: str):
             else:
                 repo_readmes[repo_name] = "[Error reading file]"
 
+        total_stars = sum(repo.get("stargazers_count", 0) for repo in repos_data if isinstance(repo, dict))
+
         return {
             "total_repos": total_repos,
             "forked_repos": forked_repos,
@@ -124,7 +126,9 @@ async def fetch_github_data(username: str):
             "bio": user_data.get("bio") or "No bio declared on GitHub.",
             "languages": list(set(languages)),
             "recent_commits": recent_commits,
-            "repo_readmes": repo_readmes
+            "repo_readmes": repo_readmes,
+            "total_stars": total_stars,
+            "account_year": user_data.get("created_at", "")[:4] if user_data.get("created_at") else "Unknown"
         }
 
 async def generate_openai_roast(username: str, metrics: dict):
@@ -148,6 +152,8 @@ async def generate_openai_roast(username: str, metrics: dict):
     - Followers: {metrics['followers']}
     - Bio: '{metrics['bio']}'
     - Languages they use: {languages_str}
+    - Account Created In: {metrics['account_year']}
+    - Total Stars Earned: {metrics['total_stars']}
     
     - Recent Commits (Top 25 across 5 most active repos):
     {commits_str}
