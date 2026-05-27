@@ -1,6 +1,7 @@
 # Environment variables
 backend/.env
 backend/alembic/env.py
+frontend/.env
 
 # Python caching
 __pycache__/

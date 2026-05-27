@@ -15,7 +15,7 @@ import { twMerge } from "tailwind-merge";
 import axios from "axios";
 import { toPng } from "html-to-image";
 
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -190,8 +190,7 @@ export default function App() {
     const text = encodeURIComponent(
       `I just got annihilated by GitBurn 🔥\n\nMy GitHub is in shambles. Get your damage report here: \n\n#GitBurn #GitHubRoast`,
     );
-    // Remember to replace the URL
-    const url = encodeURIComponent(`https://your-gitburn-url.com`);
+    const url = encodeURIComponent(`https://gitburn.ugbeadie.com`);
 
     window.open(
       `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
