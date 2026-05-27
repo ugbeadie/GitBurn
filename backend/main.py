@@ -24,8 +24,7 @@ app = FastAPI(title="GitBurn - The Ultimate GitHub Roaster")
 
 app.add_middleware(
     CORSMiddleware,
-    # Remember to replace url with live url when deployed
-    allow_origins=["http://localhost:5173", "https://your-gitburn-frontend.vercel.app"],
+    allow_origins=["http://localhost:5173", "https://gitburn.ugbeadie.com/"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
