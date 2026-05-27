@@ -24,7 +24,8 @@ app = FastAPI(title="GitHub Roaster API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Remember to replace url with live url when deployed
+    allow_origins=["http://localhost:5173", "https://your-gitburn-frontend.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,13 +73,24 @@ async def fetch_github_data(username: str):
             reverse=True
         )[:5]
 
-        commit_tasks = []
+        tasks = []
+        
         for repo in sorted_repos:
             repo_name = repo["name"]
-            url = f"https://api.github.com/repos/{username}/{repo_name}/commits?per_page=5"
-            commit_tasks.append(client.get(url))
+            commit_url = f"https://api.github.com/repos/{username}/{repo_name}/commits?per_page=5"
+            tasks.append(client.get(commit_url))
+            
+        for repo in sorted_repos:
+            repo_name = repo["name"]
+            readme_url = f"https://api.github.com/repos/{username}/{repo_name}/readme"
+            readme_headers = {**headers, "Accept": "application/vnd.github.v3.raw"}
+            tasks.append(client.get(readme_url, headers=readme_headers))
 
-        commit_results = await asyncio.gather(*commit_tasks, return_exceptions=True)
+        all_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Split the results back out
+        commit_results = all_results[:len(sorted_repos)]
+        readme_results = all_results[len(sorted_repos):]
 
         recent_commits = []
         for repo, res in zip(sorted_repos, commit_results):
@@ -89,6 +101,20 @@ async def fetch_github_data(username: str):
                         msg = c.get("commit", {}).get("message", "").split("\n")[0]
                         recent_commits.append(f"[{repo['name']}] {msg}")
 
+        repo_readmes = {}
+        for repo, res in zip(sorted_repos, readme_results):
+            repo_name = repo["name"]
+            if isinstance(res, Exception):
+                repo_readmes[repo_name] = "Failed to fetch."
+            elif res.status_code == 200:
+                # Grab the first 250 characters of the README to save token space
+                snippet = res.text[:250].strip().replace("\n", " ")
+                repo_readmes[repo_name] = snippet if snippet else "[Empty README file]"
+            elif res.status_code == 404:
+                repo_readmes[repo_name] = "[Missing / No README configured]"
+            else:
+                repo_readmes[repo_name] = "[Error reading file]"
+
         return {
             "total_repos": total_repos,
             "forked_repos": forked_repos,
@@ -97,16 +123,19 @@ async def fetch_github_data(username: str):
             "public_gists": user_data.get("public_gists", 0),
             "bio": user_data.get("bio") or "No bio declared on GitHub.",
             "languages": list(set(languages)),
-            "recent_commits": recent_commits
+            "recent_commits": recent_commits,
+            "repo_readmes": repo_readmes
         }
 
 async def generate_openai_roast(username: str, metrics: dict):
-    """Hits OpenRouter to generate a live, customized AI roast based on scraped metrics."""
     languages_str = ", ".join(metrics['languages']) if metrics['languages'] else "None"
     
     commits_list = metrics.get('recent_commits', [])
     commits_str = "\n".join(commits_list) if commits_list else "No recent commits found. Probably hasn't coded in months."
     
+    readmes_dict = metrics.get('repo_readmes', {})
+    readmes_str = "\n".join([f"- {repo}: {snippet}" for repo, snippet in readmes_dict.items()])
+
     prompt = f"""
     You are a ruthless, cynical senior full-stack developer doing a code review.
     Roast this developer's GitHub profile mercilessly. Be brutally funny, witty, and sharp. 
@@ -123,7 +152,10 @@ async def generate_openai_roast(username: str, metrics: dict):
     - Recent Commits (Top 25 across 5 most active repos):
     {commits_str}
     
-    Focus on their terrible commit messages, overused languages, or lack of originality.
+    - README Snippets for their active repos:
+    {readmes_str}
+    
+    Focus heavily on their terrible commit messages, low-effort or missing README documentation, overused languages, or lack of originality. If a repo has no README or an empty one, destroy them for it.
     """
 
     try:
