@@ -20,7 +20,7 @@ openai_client = AsyncOpenAI(
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="GitHub Roaster API")
+app = FastAPI(title="GitBurn - The Ultimate GitHub Roaster")
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +32,11 @@ app.add_middleware(
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+@app.get("/ping")
+def ping():
+    """Endpoint to keep the Render free tier instance awake."""
+    return {"status": "alive", "message": "GitBurn backend is awake!"}
 
 async def fetch_github_data(username: str):
     headers = {
