@@ -1,7 +1,5 @@
 # React + Vite (GitBurn Frontend) + FastAPI Backend
 
----
-
 ## 🛠️ Core Tech Stack
 
 | Layer | Technology | Utility |
