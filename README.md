@@ -64,9 +64,3 @@ The frontend is optimized for low-latency feedback loops, interactive graphical 
 * **Export Mechanics**: 
   * **Canvas Snapshotting (`html-to-image`)**: Converts the active DOM node layout representing the final damage report directly into a clean, high-resolution `.png` asset entirely client-side.
   * **Social Link Integration**: Dynamically encodes preset payload templates matching text parameters to simplify instantaneous sharing on platform networks like X (formerly Twitter).
-
----
-
-## ⚡ Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
